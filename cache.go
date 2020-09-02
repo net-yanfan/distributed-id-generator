@@ -9,8 +9,8 @@ import (
 	"github.com/gomodule/redigo/redis"
 )
 
-//Cache 缓存实体
-type Cache struct {
+//CachedIDGenerator 缓存ID生成器实体
+type CachedIDGenerator struct {
 	//configEntity redis配置
 	configEntity *RedisConfig
 	redisPool    *redis.Pool
@@ -44,8 +44,8 @@ type Option struct {
 }
 
 //BuildCacheEntity 创建CacheEntity
-func BuildCacheEntity(config *RedisConfig) *Cache {
-	cacheEntity := Cache{}
+func BuildCacheEntity(config *RedisConfig) *CachedIDGenerator {
+	cacheEntity := CachedIDGenerator{}
 	cacheEntity.configEntity = config
 	cacheEntity.redisPool = redisPollInit(&cacheEntity)
 	cacheEntity.baseOption = defaultOption()
@@ -54,7 +54,7 @@ func BuildCacheEntity(config *RedisConfig) *Cache {
 }
 
 //SetBaseOption 配置全局参数
-func (cache *Cache) SetBaseOption(option *Option) error {
+func (cache *CachedIDGenerator) SetBaseOption(option *Option) error {
 	err := checkOption(option)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func (cache *Cache) SetBaseOption(option *Option) error {
 }
 
 // SetOption 针对IDKey配置参数
-func (cache *Cache) SetOption(IDKey string, option *Option) error {
+func (cache *CachedIDGenerator) SetOption(IDKey string, option *Option) error {
 	err := checkOption(option)
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func (cache *Cache) SetOption(IDKey string, option *Option) error {
 }
 
 // GetIDByKey 获取分布式ID
-func (cache *Cache) GetIDByKey(IDKey string) (int64, error) {
+func (cache *CachedIDGenerator) GetIDByKey(IDKey string) (int64, error) {
 	mapContainer := cache.mapContainer
 	container := mapContainer[IDKey]
 	if container == nil {
@@ -105,7 +105,7 @@ func (cache *Cache) GetIDByKey(IDKey string) (int64, error) {
 }
 
 // INCRBY counter 30
-func (cache *Cache) fetchIDs(IDKey string) error {
+func (cache *CachedIDGenerator) fetchIDs(IDKey string) error {
 	mapContainer := cache.mapContainer
 	container := mapContainer[IDKey]
 	conn := cache.redisPool.Get()
@@ -127,7 +127,7 @@ func (cache *Cache) fetchIDs(IDKey string) error {
 }
 
 // redisPollInit 初始化Redis线程池
-func redisPollInit(cache *Cache) *redis.Pool {
+func redisPollInit(cache *CachedIDGenerator) *redis.Pool {
 	configEntity := cache.configEntity
 	return &redis.Pool{
 		MaxIdle:   configEntity.MaxIdle,
@@ -156,7 +156,7 @@ func defaultOption() *Option {
 }
 
 // GetID 获取分布式ID
-func (cache *Cache) getID(IDkey string) (int64, error) {
+func (cache *CachedIDGenerator) getID(IDkey string) (int64, error) {
 	container := cache.mapContainer[IDkey]
 	container.lock.Lock()
 	defer container.lock.Unlock()
